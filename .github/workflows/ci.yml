@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20, 22]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      # 抽帧 / probe 的真用例需要 ffmpeg；装了才会真跑，不装就自动跳过（不是失败）。
+      # 这也顺带验证了「PATH 优先于 $DSH_HOME 推导默认位置」这条解析顺序。
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Syntax check every JS file
+        run: |
+          set -e
+          for f in $(git ls-files 'lib/**/*.js' 'tests/*.mjs' 'scripts/*.mjs'); do
+            node --check "$f"
+          done
+
+      # whisper.cpp 不装：转写相关的用例会 t.skip()，所以 skipped 不为 0 是正常的。
+      # 要看的数字是 fail = 0。
+      - name: Run tests
+        run: npm test

@@ -48,6 +48,44 @@
 
 ---
 
+## 兼容性（装之前先对一眼）
+
+**实测环境**：`dsh-desktop-next` **2.0.20-next** · Windows 11 · Node 24 · 真 ffmpeg + 真 whisper.cpp 跑通。
+
+⚠️ **只在上面这一版上验过**。DSH 还在 `next` 渠道迭代，宿主的 API 形状会变（官方插件的注释里
+就记着 `0.1.7-rc.2` 与 `0.2.0-rc.1` 的 slot props 差异）。装不上时先比版本。
+
+### 它依赖这些宿主接口
+
+| 宿主接口 | 用来做什么 | 挂了会怎样 |
+|---|---|---|
+| `ctx.tools.register(def)` | 注册 `video_understand` 工具 | 插件装上但没有工具 |
+| `ctx.provide(name, impl)` | 注册 `videoUnderstand` 服务（给别的插件用） | 没有对外服务；工具照常 |
+| `ctx.inject(['webServer'], cb)` | 可选注入，挂设置界面后端 | 没有设置界面；工具照常 |
+| `ctx.get('webServer')` + `server.register({ kind: 'exact', path, handler })` | `/dsh-video/api/config` 读写路由 | 同上 |
+| `ctx.llm.stream(options)` | 视觉分批调用（`{ provider, model, messages }`） | 没有画面分析 |
+| `ctx.llm.resolveModelInfo(p, m)` | 送图前校验 `inputModalities` 含 `image` | 校验失效 = 图片被静默换成占位符的旧风险 |
+| `ctx.llm.imageRequestPricing(p, m)` | 取 `priceImages()` 算图片 token | 成本退回内置费率表估算 |
+| `ctx.llm.listProviders()` / `listModels(p)` | **默认模型自动探测**（见下） | 退回写死的默认值 |
+| `ctx.attachments.admitPromptContent(blocks)` | base64 → 附件 ref（DSH 的 image block 只能带 attachment） | 没有画面分析 |
+| `window.__ModuleLoader__.load({ id, factory })` | 客户端模块装载（设置界面） | 没有设置界面 |
+| `ctx.slots.inject('settings.section')` / `slots.register(...)` | 往「设置」里加一页 | 同上 |
+
+### 默认视觉模型会自动适配你的宿主
+
+默认值写的是 `deepseek-account/deepseek-flash` —— 那是**我们这台机器**的 provider 名。
+各家部署的 provider 名并不一样（账号体系 / API key / 别家 provider 都可能不同）。
+
+所以：**当你没有显式指定 `model`** 时，插件会先看这个 provider 在不在；不在就从宿主里
+挑一个 `inputModalities` 含 `image` 的模型，并在 `failures` 里记一条：
+
+```json
+{ "stage": "model", "reason": "default-model-unavailable",
+  "detail": "默认视觉模型 deepseek-account/deepseek-flash 在此宿主不可用（没有该 provider），已自动改用 X/Y" }
+```
+
+**你显式传了 `model`（工具参数或设置界面）就绝不替换** —— 哪怕它不可用，也会明确报错。
+换模型必须让人看见，静默换等于偷偷降级。
 ## 安装
 
 仓库：<https://github.com/owl-zxk/dsh-video>（MIT）
