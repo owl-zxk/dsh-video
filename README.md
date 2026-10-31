@@ -1,5 +1,8 @@
 # dsh-video · 看懂视频
 
+> npm 包名是 **`dsh-video-zxk`**（`dsh-video` 在 npm 上已被他人占用），GitHub 仓库仍叫 `owl-zxk/dsh-video`。
+> 装的时候认包名，看代码认仓库名。
+
 给 DSH 加一个 `video_understand` 工具：**看画面 + 听声音 + 对时间轴**，
 把一个本地视频变成结构化结果 —— 分场景的画面描述、屏幕上的文字、动作、
 带毫秒时间戳的语音转录、全局总结，以及针对你提问的直接回答。
@@ -132,6 +135,12 @@ dsh plugin --profile desktop add "https://github.com/owl-zxk/dsh-video/tarball/m
 
 直接指向仓库 tarball，装完重启 DSH 即可 —— 不用 clone、不用管目录放哪。
 
+**发布到 npm 之后**还能更短（目前还没发，见「发布」一节）：
+
+```powershell
+dsh plugin --profile desktop add dsh-video-zxk
+```
+
 ### 方式 B：克隆到本地再 link（改代码时用这条）
 
 ```powershell
@@ -163,12 +172,12 @@ node --test --test-isolation=none tests/media.test.mjs   # 抽帧与 probe 需�
 {
   "dependencies": {
     // 二选一：tarball（不用 clone）或本地 link（改代码时）
-    "dsh-video": "https://github.com/owl-zxk/dsh-video/tarball/main"
-    // "dsh-video": "link:<你 clone 下来的目录>"
+    "dsh-video-zxk": "https://github.com/owl-zxk/dsh-video/tarball/main"
+    // "dsh-video-zxk": "link:<你 clone 下来的目录>"
   },
   "dsh": {
     "profile": {
-      "bundles": ["dsh-video"]
+      "bundles": ["dsh-video-zxk"]
     }
   }
 }
@@ -186,7 +195,7 @@ node --test --test-isolation=none tests/media.test.mjs   # 抽帧与 probe 需�
 ### 卸载
 
 ```powershell
-dsh plugin --profile desktop remove dsh-video
+dsh plugin --profile desktop remove dsh-video-zxk
 ```
 
 或者把上面那两处手改的字段删掉，重启。
@@ -212,7 +221,7 @@ dsh plugin --profile desktop remove dsh-video
 
 **配置存在哪、什么时候生效**：`$DSH_HOME/dsh-video.config.json`（不是 profile 的 `cordis.patch.yml`）。
 宿主侧**每次调用工具时都重读这个文件**，所以改完下一次调用就生效，**不用重启**。
-优先级：配置文件 > 环境变量 > 内置默认。profile 里 `dsh-video` 的 `config:` 仍然可写，作为最底层的 base。
+优先级：配置文件 > 环境变量 > 内置默认。profile 里 `dsh-video-zxk` 的 `config:` 仍然可写，作为最底层的 base。
 
 **每个二进制的解析顺序（逐级回退）**：
 
@@ -547,6 +556,26 @@ ffmpeg 的 `-q:v` 是 **qscale**：2 最好、31 最烂，**方向和 libjpeg qu
 
 ---
 
+
+## 发布（维护者用）
+
+npm 包名是 **`dsh-video-zxk`** —— `dsh-video` 在 npm 上已被他人占用（同名同行占位，0.0.1）。
+包名改动时必须同步两处，否则表现为「装上了但没工具 / 设置页 404」：
+
+| 位置 | 值 |
+|---|---|
+| `package.json` 的 `name` | `dsh-video-zxk` |
+| `cordis.patch.yml` 的 `name` | 必须与包名**完全一致** |
+| `cordis.patch.yml` 的 `id` | 任意唯一即可，但同一 id 在一份 profile 里只能出现一次 |
+
+```powershell
+cd <本仓库>
+npm login            # 一次性
+npm publish          # prepublishOnly 会先跑一遍测试，红了不许发
+```
+
+`files` 已经配好（`lib` / `assets` / `cordis.patch.yml` / `README.md` / `docs`），
+`npm pack` 出来 26 个文件、约 156 kB，`tests` 与 `scripts` 不会进包。
 ## 开发
 
 ```powershell

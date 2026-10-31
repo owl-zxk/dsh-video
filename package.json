@@ -1,5 +1,5 @@
 {
-  "name": "dsh-video",
+  "name": "dsh-video-zxk",
   "version": "0.1.0",
   "description": "让 DSH 看懂视频：画面 + 声音 + 时间轴 → 结构化理解结果（不生成视频）",
   "type": "module",
@@ -27,7 +27,8 @@
   },
   "scripts": {
     "test": "node --test tests/*.test.mjs",
-    "test:local": "node --test --test-isolation=none tests/*.test.mjs"
+    "test:local": "node --test --test-isolation=none tests/*.test.mjs",
+    "prepublishOnly": "node --test --test-isolation=none tests/*.test.mjs"
   },
   "engines": {
     "node": ">=20"
