@@ -446,4 +446,55 @@ z 来自 `import z from '@deepseek-ai/schemastery'`（**只能在 lib/index.js �
   `TOO_MANY_IMAGES`。契约 §2 的 batchSize（6/8/10）都在限内，别自己放大。
 - 估成本要用 `ref.width/ref.height`（归一化后的真实尺寸），不是我们抽帧时的尺寸。
 
+## 20. 对外服务 `videoUnderstand`（给别的插件用的编程接口）
+
+`lib/service.js` 的 `createVideoService({ registry, makeDeps })`，由 `lib/index.js` 在装配末尾
+通过 **`ctx.provide('videoUnderstand', service)`** 注册。
+
+### 20.1 为什么是 cordis service，不是 export 一个函数
+
+插件之间跨包 import 要求两边的解析对得上（link 位置 / pnpm hoist / 换机器都会变），一断就是
+`ERR_MODULE_NOT_FOUND`。`ctx.provide()` 是宿主自己的服务总线：别的插件 `inject` 一下就能拿到，
+本插件卸载时 cordis 自动摘掉注册（provide 返回 disposer）。
+
+**这里也不 import `@deepseek-ai/cordis`** —— `ctx.provide()` 是 Context 的公开方法，
+`Service` 基类内部只是转调 `ctx.reflect.provide()`。§18 说了装配层只要有一个宿主包静态 import，
+插件就加载不起来；服务是给别人的入口，更不能成为那个断点。
+
+降级链：`ctx.provide` → `ctx.reflect.provide` → 抛（明确告诉宿主不支持，不静默少一个服务）。
+
+### 20.2 接口
+
+| 方法 | 契约 |
+|---|---|
+| `understand(args, options?)` | `args` 与 `video_understand` 工具参数**同形**；返回 §15 的 17 键结构 |
+| `run(capabilityId, args, options?)` | 按能力 id 调用；**id 未知或为空时抛**（见 20.3） |
+| `capabilities()` | `[{ id, tool, description }]`，按注册顺序 |
+
+`options = { signal?, config? }`：`config` 是**本次调用**的临时覆盖，不写文件、不影响其它调用方。
+服务对象**冻结**（`Object.isFrozen` 为 true）。
+
+### 20.3 错误语义（与工具刻意不同，别改）
+
+| 情况 | 行为 | code |
+|---|---|---|
+| 能力 id 不存在 | **抛** | `UNKNOWN_CAPABILITY` |
+| 能力 id 为空 / 非字符串 | **抛** | `INVALID_CAPABILITY` |
+| 缺 registry / makeDeps | 构造时**抛** | `SERVICE_NO_REGISTRY` / `SERVICE_NO_DEPS` |
+| 视频坏 / 模型挂 / whisper 缺 | **不抛**，结构化结果 + `failures` | — |
+
+分界线是「谁写错了」：调用方参数写错是**编程错误**，必须立刻炸；
+模型或媒体失败是**运行时现实**，返回部分结果（与工具的承诺一致）。
+
+### 20.4 一条不许破的规矩
+
+工具（`toTool` 的 `execute`）和服务（`makeDeps`）**必须共用 `shared.callDeps`**。
+各写一遍迟早分叉 —— 典型事故形态是「工具那条校验了图片预算，服务这条绕过去了」，
+而服务恰恰是别的插件最可能拿来批量跑的那个入口。
+
+### 20.5 加新能力时
+
+只改 `lib/capabilities/index.js` 加一项 —— `service.run` / `service.capabilities()` 自动跟着变，
+`lib/service.js` 与 `lib/index.js` 一个字都不用动。
+
 

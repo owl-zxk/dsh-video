@@ -321,6 +321,62 @@ whisper 只有 CPU 版，长音频的转录时间是主要变量。
 ---
 
 
+## 给其它插件用（编程接口，不走工具）
+
+除了给模型用的 `video_understand` 工具，本插件还注册了一个 **cordis 服务**，
+别的 DSH 插件可以直接调用它 —— 不需要 import 本包，也不需要知道它装在哪。
+
+服务名：**`videoUnderstand`**
+
+```js
+// 你的插件：把 videoUnderstand 声明成依赖，它出现前不会被激活
+export const inject = ['videoUnderstand']
+
+export function apply (ctx) {
+  // 参数与 video_understand 工具**完全同形**，不用学第二套
+  return ctx.effect(() => {
+    // …某个时机
+  })
+}
+
+// 用的时候：
+const result = await ctx.videoUnderstand.understand({
+  path: 'D:/videos/demo.mp4',
+  detail: 'quick',            // quick | standard | deep
+  question: '这个视频在讲什么？', // 可选
+})
+```
+
+> 不想硬依赖就不写进 `inject`，改用 `const svc = ctx.get('videoUnderstand')` 判空 ——
+> 本插件没装或被禁用时前者不会激活你的插件，后者拿到 `undefined`，按需要选。
+
+### 方法
+
+| 方法 | 说明 |
+|---|---|
+| `understand(args, options?)` | 理解一个视频（能力 ① 的便捷入口）。`args` 同工具参数 |
+| `run(capabilityId, args, options?)` | 通用入口：按能力 id 调用。将来加「生成视频 / 剪辑 / 字幕」时这里不用改 |
+| `capabilities()` | 返回 `[{ id, tool, description }]` —— 当前有哪些能力 |
+
+`options`：
+
+| 键 | 说明 |
+|---|---|
+| `signal` | `AbortSignal`，中途取消 |
+| `config` | **本次调用**的临时配置覆盖（例如只这一次换视觉模型），不写配置文件、不影响别的调用方 |
+
+### 错误语义（和工具刻意不同）
+
+| 情况 | 行为 |
+|---|---|
+| 能力 id 不存在 / 传空 | **抛** `UNKNOWN_CAPABILITY` / `INVALID_CAPABILITY` |
+| 视频坏了、模型挂了、whisper 缺 | **不抛**，返回结构化结果，`failures` 非空 |
+
+分界线是「谁写错了」：调用方写错参数是**编程错误**，必须立刻炸出来；
+而模型或媒体失败是**运行时现实**，工具和服务的承诺都是返回结构化的部分结果。
+
+工具与服务共用同一条依赖装配路径（`shared.callDeps`）—— 不会出现「工具校验了图片预算、
+服务却绕过」这种两条路径分叉的事故。
 ## 设置界面（改完即时生效，不用重启）
 
 DSH「设置」里有一页「**视频理解**」：
