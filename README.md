@@ -135,7 +135,7 @@ dsh plugin --profile desktop add "https://github.com/owl-zxk/dsh-video/tarball/m
 
 直接指向仓库 tarball，装完重启 DSH 即可 —— 不用 clone、不用管目录放哪。
 
-**发布到 npm 之后**还能更短（目前还没发，见「发布」一节）：
+或者**从 npm 装**（已发布 `0.1.0`，不依赖 GitHub 可达性，国内更稳）：
 
 ```powershell
 dsh plugin --profile desktop add dsh-video-zxk
@@ -560,6 +560,8 @@ ffmpeg 的 `-q:v` 是 **qscale**：2 最好、31 最烂，**方向和 libjpeg qu
 ## 发布（维护者用）
 
 npm 包名是 **`dsh-video-zxk`** —— `dsh-video` 在 npm 上已被他人占用（同名同行占位，0.0.1）。
+已发布：<https://www.npmjs.com/package/dsh-video-zxk> · `0.1.0` · 26 文件 / 156.6 kB。
+（历史遗留一个空版本 `0.0.0-stage`，`latest` 不指向它，不影响安装。）
 包名改动时必须同步两处，否则表现为「装上了但没工具 / 设置页 404」：
 
 | 位置 | 值 |
