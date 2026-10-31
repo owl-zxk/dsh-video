@@ -50,7 +50,26 @@
 
 ## 安装
 
-### 方式一：命令行（推荐，本地源码 link）
+### 方式零：从 GitHub 克隆（给别人用的那条）
+
+仓库：<https://github.com/owl-zxk/dsh-video>（MIT）
+
+```powershell
+git clone https://github.com/owl-zxk/dsh-video.git D:\DSH\dsh-home\dsh-video-src
+dsh plugin --profile desktop add "link:D:\DSH\dsh-home\dsh-video-src"
+```
+
+> ⚠️ **别把它 link 到 DSH 安装目录树里**（比如 `...\DSH NEXT\` 下面）。
+> 宿主的模块解析插桩覆盖不到那种路径，插件里的宿主包解析会失败。
+> 上面用的 `$DSH_HOME\...` 是安全位置（与 `lanpangzi-src` / `whale-src` 同级）。
+
+克隆下来后先自检依赖（ffmpeg / whisper）：
+
+```powershell
+cd D:\DSH\dsh-home\dsh-video-src
+node --test --test-isolation=none tests/media.test.mjs   # 抽帧与 probe 需要 ffmpeg
+```
+### 方式一：命令行（本地源码 link）
 
 ```powershell
 dsh plugin --profile desktop add "link:<本仓库绝对路径>"
