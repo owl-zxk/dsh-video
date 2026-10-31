@@ -1,0 +1,7 @@
+# 换行统一交给 git —— 否则本机 core.autocrlf 的差异会跟着平台走。
+#
+# assets/opencc/* 用 -text 完全禁用转换：那两份是 OpenCC 的数据文件，
+# 我们对外声称「与源逐字节一致」，被转成 CRLF 就破了这个声明
+# （功能上 t2s 用 split(/\r?\n/) 能吃 CRLF，但一句承诺不该靠容错兜着）。
+* text=auto eol=lf
+assets/opencc/* -text
