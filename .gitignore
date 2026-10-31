@@ -1,0 +1,9 @@
+node_modules/
+
+# 测试素材：scripts/make-fixture.mjs 用 ffmpeg 现生成，不进仓库
+test-assets/
+
+# 抽帧 / 抽音轨 / 转录的临时产物
+.cache/
+
+*.log
