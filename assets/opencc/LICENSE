@@ -1,7 +1,7 @@
 本目录下的 TSCharacters.txt 与 TSPhrases.txt 来自 OpenCC。
 
 来源：Open Chinese Convert (OpenCC) —— https://github.com/ByVoid/OpenCC
-本机取用位置：D:\DSH\dsh-home\profiles\desktop\node_modules\dsh-bili-whale\tools\lib\opencc\
+取用位置：任意安装了 dsh-bili-whale 的目录下的 tools/lib/opencc/（本仓库只拷数据文件，不依赖那个插件）
 许可：Apache License 2.0（数据文件头部的 License 声明原样保留，未做任何修改）
 
 数据规模（拷贝时的实际行数，不含注释行）：

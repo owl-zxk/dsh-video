@@ -35,7 +35,7 @@ function memIo (initial = {}) {
   return { files, calls, io }
 }
 
-const FILE = 'X:/dsh-home/dsh-video.config.json'
+const FILE = 'dsh-video.config.json'
 
 test('默认值：没有任何配置时 resolved 全部回落到内置默认', () => {
   const { io } = memIo()

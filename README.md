@@ -37,12 +37,12 @@
 | whisper 模型 | `$DSH_HOME\voice\whisper\ggml-base.bin`（141 MB）、`ggml-small.bin`（465 MB） | `quick` 档用 base，`standard` / `deep` 用 small |
 
 `$DSH_HOME` 的含义：环境变量 `DSH_HOME` 优先，否则 `%USERPROFILE%\.dsh`。
-本机 `DSH_HOME=D:\DSH\dsh-home`，所以 whisper 根目录是 `D:\DSH\dsh-home\voice\whisper`。
+**这些默认值全部由 `$DSH_HOME` 推导，仓库里没有任何硬编码绝对路径。**
+你的 whisper 装在别处（或干脆装在系统 PATH 里）都行 —— 解析顺序是
+`config` > 环境变量（`DSH_VIDEO_WHISPER_BIN` 等）> **系统 PATH** > `$DSH_HOME` 推导的默认位置。
 
-> ⚠️ **`PROMPT.md` 里写的 `C:\Users\Administrator\.dsh\voice\whisper\...` 不存在。**
-> 那个 `.dsh` 目录下只有 `electron-user-data` 和 `logs`，没有 `voice`。
-> **真实位置是 `$DSH_HOME/voice/whisper`。** 这条已经钉进 `docs/CONTRACT.md` 第 0 节，
-> 代码里一律按 `$DSH_HOME` 解析，不写死任何绝对路径。
+> 早期的一份需求文档把 whisper 写成某个固定的用户主目录路径，那在别的部署里并不成立；
+> 所以这里只认推导与环境变量，**不认任何写死的路径**。
 
 还需要：一个 **`input` 含 `image` 的模型**（见下方「已知限制」第 3 条）。
 
@@ -55,8 +55,9 @@
 仓库：<https://github.com/owl-zxk/dsh-video>（MIT）
 
 ```powershell
-git clone https://github.com/owl-zxk/dsh-video.git D:\DSH\dsh-home\dsh-video-src
-dsh plugin --profile desktop add "link:D:\DSH\dsh-home\dsh-video-src"
+# 目标目录自己定，习惯上放在 $DSH_HOME 下（别放进 DSH 安装目录树，见下方警告）
+git clone https://github.com/owl-zxk/dsh-video.git "$env:DSH_HOME\dsh-video-src"
+dsh plugin --profile desktop add "link:$env:DSH_HOME\dsh-video-src"
 ```
 
 > ⚠️ **别把它 link 到 DSH 安装目录树里**（比如 `...\DSH NEXT\` 下面）。
@@ -66,7 +67,7 @@ dsh plugin --profile desktop add "link:D:\DSH\dsh-home\dsh-video-src"
 克隆下来后先自检依赖（ffmpeg / whisper）：
 
 ```powershell
-cd D:\DSH\dsh-home\dsh-video-src
+cd "$env:DSH_HOME\dsh-video-src"
 node --test --test-isolation=none tests/media.test.mjs   # 抽帧与 probe 需要 ffmpeg
 ```
 ### 方式一：命令行（本地源码 link）
@@ -75,11 +76,7 @@ node --test --test-isolation=none tests/media.test.mjs   # 抽帧与 probe 需�
 dsh plugin --profile desktop add "link:<本仓库绝对路径>"
 ```
 
-本机就是：
-
-```powershell
-dsh plugin --profile desktop add "link:D:\DSH\deepseek harness\wokrspace\dsh-video"
-```
+把 `<本仓库绝对路径>` 换成你 clone / 解压出来的目录即可 —— 仓库里不写死任何具体路径。
 
 ### 方式二：手改 profile
 
@@ -88,7 +85,7 @@ dsh plugin --profile desktop add "link:D:\DSH\deepseek harness\wokrspace\dsh-vid
 ```jsonc
 {
   "dependencies": {
-    "dsh-video": "link:D:\\DSH\\deepseek harness\\wokrspace\\dsh-video"
+    "dsh-video": "link:<本仓库绝对路径>"
   },
   "dsh": {
     "profile": {
@@ -173,7 +170,7 @@ dsh plugin --profile desktop remove dsh-video
 
 装好重启后直接让模型调工具，例如：
 
-> 「用 `quick` 看一眼 D:\videos\demo.mp4 讲的是什么」
+> 「用 `quick` 看一眼 <你的视频路径> 讲的是什么」
 >
 > 「`deep` 读一下这段视频里出现的所有字幕，顺便说说第 3 分 20 秒那个画面右下角的字是什么」
 

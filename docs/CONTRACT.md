@@ -13,7 +13,7 @@
 | ffmpeg / ffprobe | \DSH\dsh-home\bili-whale\bin\{ffmpeg,ffprobe}.exe  ✅ 存在 |
 | whisper-cli | \DSH\dsh-home\voice\whisper\bin\Release\whisper-cli.exe ✅ |
 | whisper 模型 | \DSH\dsh-home\voice\whisper\ggml-base.bin（141MB）、ggml-small.bin（465MB） ✅ |
-| ~~PROMPT.md 写的 C:\Users\Administrator\.dsh\voice\whisper\...~~ | ❌ **不存在**（C:\Users\Administrator\.dsh 下只有 electron-user-data 和 logs） |
+| 早期需求文档写的固定用户主目录（`%USERPROFILE%\.dsh\voice\whisper\...`） | ❌ 在别的部署里**不成立**（那个 `.dsh` 目录未必有 `voice` 子目录） |
 
 → whisper 根目录一律按 $DSH_HOME/voice/whisper 解析（DSH_HOME 环境变量优先，否则
 %USERPROFILE%\.dsh），与 dsh-bili-whale/tools/lib/paths.mjs 完全一致。
@@ -196,7 +196,7 @@ PROMPT.md 没提这条，但它是真实输出质量问题，不处理会一直�
 
 - 实现放 `lib/util/t2s.js`，词表拷进 `assets/opencc/{TSCharacters.txt,TSPhrases.txt}`
   （OpenCC 数据，Apache-2.0，保留 LICENSE 头；来源是
-  `D:\DSH\dsh-home\profiles\desktop\node_modules\dsh-bili-whale\tools\lib\opencc\`）
+  `<任意 dsh-bili-whale 安装目录>/tools/lib/opencc/`）
 - 接口照既有实现：`ensureLoaded()` / `toSimplified(text)` / `hasTraditional(text)`
 - **短语表优先、单字表兜底**、长词优先匹配、代理对不能按 code unit 切
 - 导出 `existingModel(tmp)` 之类之外**不加依赖**：纯查表，不 import 任何包
@@ -333,7 +333,7 @@ E 用 `e2e-*`）。B 组曾与 A 组都用 `noaudio.mp4`，互覆盖过一次，
 ```
 dsh-video (dsh-video): failed to import: Error [ERR_MODULE_NOT_FOUND]:
 Cannot find package '@deepseek-ai/schemastery'
-imported from D:\DSH\deepseek harness\wokrspace\dsh-video\lib\index.js
+imported from <插件目录>\lib\index.js
 ```
 
 **我从源码读出来的判断是错的，日志是对的。** 当时的推理是：`dsh-app-boot` 的
@@ -380,7 +380,7 @@ PROMPT.md 是需求原件，**不改它**；以本条与 §11 为准。
 ## 19. 已钉死的宿主 API 事实（从 app.asar 真实源码读出来的，别再猜）
 
 源码位置（裸 node 的 fs 能读 asar）：
-`D:/DSH/deepseek harness/DSH NEXT/resources/app.asar/node_modules/@deepseek-ai/...`
+`<DSH 安装目录>/resources/app.asar/node_modules/@deepseek-ai/...`
 
 ### 19.1 `defineTool`（`@deepseek-ai/dsh-tools`）
 

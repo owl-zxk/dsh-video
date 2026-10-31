@@ -31,10 +31,10 @@ import { ensureFixtures, FIXTURE_DIR } from '../scripts/make-fixture.mjs'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(HERE, '..')
-// 契约 §0 的实测路径；缺了就跳过真解码用例（不是让 CI 红）
-const FFMPEG_EXE = 'D:\\DSH\\dsh-home\\bili-whale\\bin\\ffmpeg.exe'
-const HAS_FFMPEG = fs.existsSync(FFMPEG_EXE)
-const SKIP_REAL = HAS_FFMPEG ? false : '缺 ffmpeg（' + FFMPEG_EXE + '）'
+// 二进制走产品自己的解析；缺了就跳过真解码用例（不是让 CI 红）
+const FFMPEG_EXE = resolveBinaries().ffmpeg || ''
+const HAS_FFMPEG = !!FFMPEG_EXE && fs.existsSync(FFMPEG_EXE)
+const SKIP_REAL = HAS_FFMPEG ? false : '缺 ffmpeg（环境变量 / PATH / $DSH_HOME 都没找到）'
 const BINS = resolveBinaries()
 const FF = BINS.ffmpeg || FFMPEG_EXE
 

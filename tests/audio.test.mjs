@@ -23,6 +23,7 @@ import path from 'node:path'
 import { spawn } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { planChunks, extractWav, detectSpeech, transcribeChunk, transcribe } from '../lib/media/audio.js'
+import { resolveBinaries } from '../lib/util/paths.js'
 import { ensureLoaded, hasTraditional, toSimplified } from '../lib/util/t2s.js'
 
 // 断言素材是**真跑出来的转录**（用户素材 BV1DubxzVEPB 前 20 秒，whisper small，-l zh），
@@ -38,12 +39,17 @@ const ASSETS = path.join(ROOT, 'test-assets')
 const DUMMY = path.join(ASSETS, 'dummy')
 // 只在测试里用的"词表目录"，故意不存在：验证 t2s / transcribe 的 fail-open
 const NO_DICT_DIR = path.join(ASSETS, '不存在的词表目录')
-const FFMPEG = process.env.DSH_VIDEO_FFMPEG || process.env.FFMPEG || 'D:\\DSH\\dsh-home\\bili-whale\\bin\\ffmpeg.exe'
-const WHISPER_BIN = process.env.DSH_VIDEO_WHISPER_BIN || 'D:\\DSH\\dsh-home\\voice\\whisper\\bin\\Release\\whisper-cli.exe'
-const WHISPER_DIR = process.env.DSH_VIDEO_WHISPER_DIR || 'D:\\DSH\\dsh-home\\voice\\whisper'
-const MODEL = ['ggml-base.bin', 'ggml-small.bin'].map((n) => path.join(WHISPER_DIR, n)).find((p) => fs.existsSync(p)) ?? null
-const hasFfmpeg = fs.existsSync(FFMPEG)
-const hasWhisper = fs.existsSync(WHISPER_BIN) && !!MODEL
+// 二进制一律走产品自己的解析（config > 环境变量 > PATH > $DSH_HOME 推导），
+// 测试里不再猜任何绝对路径：换台机器只要 ffmpeg/whisper 在 PATH 里，真用例就照跑。
+const BIN = resolveBinaries({})
+const FFMPEG = process.env.DSH_VIDEO_FFMPEG || process.env.FFMPEG || BIN.ffmpeg || ''
+const WHISPER_BIN = process.env.DSH_VIDEO_WHISPER_BIN || BIN.whisperBin || ''
+const WHISPER_DIR = process.env.DSH_VIDEO_WHISPER_DIR || BIN.whisperDir || ''
+const MODEL = WHISPER_DIR
+  ? ['ggml-base.bin', 'ggml-small.bin'].map((n) => path.join(WHISPER_DIR, n)).find((p) => fs.existsSync(p)) ?? null
+  : null
+const hasFfmpeg = !!FFMPEG && fs.existsSync(FFMPEG)
+const hasWhisper = !!WHISPER_BIN && fs.existsSync(WHISPER_BIN) && !!MODEL
 
 // 契约 §5 的 run：绝不 throw，超时/中止走 code
 //
@@ -326,7 +332,7 @@ test('transcribe：分块转录后按 offsets 拼回，每块加回自己的起�
       return { result: { language: 'zh' }, transcription: [{ offsets: { from: 0, to: 1000 }, text: '块' + i }] }
     }
   })
-  const r = await transcribe('C:\\fake\\video.mp4', {
+  const r = await transcribe('fake-video.mp4', {
     ffmpeg: FFMPEG,
     whisperBin: DUMMY_BIN,
     whisperDir: DUMMY_DIR,
