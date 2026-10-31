@@ -68,8 +68,13 @@ dsh plugin --profile desktop add "link:$env:DSH_HOME\dsh-video-src"
 
 ```powershell
 cd "$env:DSH_HOME\dsh-video-src"
+$env:DSH_HOME = "$env:DSH_HOME"   # 已有就不用设；缺了会回落到 %USERPROFILE%\.dsh
 node --test --test-isolation=none tests/media.test.mjs   # 抽帧与 probe 需要 ffmpeg
 ```
+
+> 真用例（抽帧 / 转写 / 端到端）需要找到 ffmpeg 与 whisper，找不到会**跳过**而不是失败。
+> 解析顺序：`config` > 环境变量（`DSH_VIDEO_FFMPEG` 等）> **系统 PATH** > `$DSH_HOME` 推导的默认位置。
+> 所以最省事的做法是把 ffmpeg 放进 PATH；或者显式设 `DSH_HOME` 指向装了它的那份 DSH。
 ### 方式一：命令行（本地源码 link）
 
 ```powershell
