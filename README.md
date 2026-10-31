@@ -50,9 +50,51 @@
 
 ## 安装
 
-### 方式零：从 GitHub 克隆（给别人用的那条）
-
 仓库：<https://github.com/owl-zxk/dsh-video>（MIT）
+
+### 先装这三样（不装会明确报错，不会静默降级）
+
+**① ffmpeg + ffprobe** —— 抽帧、读时长全靠它。任选一种：
+
+```powershell
+winget install Gyan.FFmpeg      # 或 scoop install ffmpeg / choco install ffmpeg
+ffmpeg -version                  # 装完确认在 PATH 里
+```
+
+**② whisper.cpp**（CPU 版，做语音转录）—— 从官方 release 解压即可，不用编译：
+
+```powershell
+# 1. 下载 whisper-bin-x64.zip：https://github.com/ggml-org/whisper.cpp/releases
+# 2. 解压到 $env:DSH_HOME\voice\whisper\ ，让 exe 落在 bin\Release\ 下
+#    （解压后目录结构已就是这样，整个 Release 文件夹搬过去即可）
+# 3. 下模型（base 141MB / small 465MB，二选一或都下）：
+#    https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin
+#    https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin
+#    国内慢就用镜像：https://hf-mirror.com/ggerganov/whisper.cpp/resolve/main/ggml-small.bin
+$env:DSH_HOME\voice\whisper\          # ← 最终长这样：
+#   bin\Release\whisper-cli.exe
+#   ggml-base.bin
+#   ggml-small.bin
+```
+
+> 已经装在别处也行：设 `DSH_VIDEO_WHISPER_BIN` / `DSH_VIDEO_WHISPER_DIR`，
+> 或者把 `whisper-cli` 放进 PATH。**没有 whisper 只是没有转录**，画面分析照常，
+> `failures` 里会写清缺哪个文件 —— 不会假装成功。
+
+**③ 一个能吃图的模型** —— 插件会在送图前校验 `inputModalities` 含 `image`，
+选错了明确报错而不是把图换成占位符。默认值写的是 `deepseek-account/deepseek-flash`，
+但**各家部署的 provider 名不一样**：默认值在你的宿主里不存在时，插件会**自动从宿主里挑一个
+吃图的模型**并在 `failures` 里记一条说明。也可以在设置界面直接选（见下）。
+
+### 方式 A：一行装（推荐）
+
+```powershell
+dsh plugin --profile desktop add "https://github.com/owl-zxk/dsh-video/tarball/main"
+```
+
+直接指向仓库 tarball，装完重启 DSH 即可 —— 不用 clone、不用管目录放哪。
+
+### 方式 B：克隆到本地再 link（改代码时用这条）
 
 ```powershell
 # 目标目录自己定，习惯上放在 $DSH_HOME 下（别放进 DSH 安装目录树，见下方警告）
@@ -75,22 +117,16 @@ node --test --test-isolation=none tests/media.test.mjs   # 抽帧与 probe 需�
 > 真用例（抽帧 / 转写 / 端到端）需要找到 ffmpeg 与 whisper，找不到会**跳过**而不是失败。
 > 解析顺序：`config` > 环境变量（`DSH_VIDEO_FFMPEG` 等）> **系统 PATH** > `$DSH_HOME` 推导的默认位置。
 > 所以最省事的做法是把 ffmpeg 放进 PATH；或者显式设 `DSH_HOME` 指向装了它的那份 DSH。
-### 方式一：命令行（本地源码 link）
-
-```powershell
-dsh plugin --profile desktop add "link:<本仓库绝对路径>"
-```
-
-把 `<本仓库绝对路径>` 换成你 clone / 解压出来的目录即可 —— 仓库里不写死任何具体路径。
-
-### 方式二：手改 profile
+### 方式 C：手改 profile（没有 `dsh` 命令时）
 
 编辑 `%DSH_HOME%\profiles\desktop\package.json`：
 
 ```jsonc
 {
   "dependencies": {
-    "dsh-video": "link:<本仓库绝对路径>"
+    // 二选一：tarball（不用 clone）或本地 link（改代码时）
+    "dsh-video": "https://github.com/owl-zxk/dsh-video/tarball/main"
+    // "dsh-video": "link:<你 clone 下来的目录>"
   },
   "dsh": {
     "profile": {
