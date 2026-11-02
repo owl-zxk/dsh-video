@@ -99,12 +99,14 @@ test('paths: whisperModelPath 容忍前缀后缀，existingModel 按 prefer 与 
   assert.equal(existingModel(dir, 'medium'), 'small') // prefer 不存在 → 退回 small
 })
 
-test('paths: resolveBinaries 优先级 config > 环境变量 > 默认 > PATH', () => {
+test('paths: resolveBinaries 优先级 config > 环境变量 > PATH > $DSH_HOME 默认', () => {
   const dir = tmp('dsh-paths-bin-')
+  const exe = (name) => (process.platform === 'win32' ? name + '.exe' : name)
   const mk = (name) => { const f = path.join(dir, name); fs.writeFileSync(f, ''); return f }
   const cfgBin = mk('cfg-ffmpeg')
   const envBin = mk('env-ffmpeg')
   const keepEnv = { DSH_VIDEO_FFMPEG: process.env.DSH_VIDEO_FFMPEG, FFMPEG: process.env.FFMPEG }
+  const keepPath = process.env.PATH
   try {
     process.env.DSH_VIDEO_FFMPEG = envBin
     delete process.env.FFMPEG
@@ -113,10 +115,23 @@ test('paths: resolveBinaries 优先级 config > 环境变量 > 默认 > PATH', (
     // 显式给了但不存在 → 往下一档退，不要死在一个笔误上
     assert.equal(resolveBinaries({ ffmpeg: path.join(dir, 'nope.exe') }).ffmpeg, envBin)
     delete process.env.DSH_VIDEO_FFMPEG
+
+    // ③ PATH 排在 $DSH_HOME 默认之前：用户系统里装好的 ffmpeg 不该被我们猜的目录盖掉。
+    //    把 PATH 指到我们自己的临时目录里，断言选中它 —— 这样不依赖跑测试这台机器装了什么
+    //    （开发机 winget 装了 ffmpeg、CI 里 apt 装了，两者 PATH 内容不同，硬断言真值必红）。
+    const pathBin = mk(exe('ffmpeg'))
+    const pathProbe = mk(exe('ffprobe'))
+    process.env.PATH = dir
+    assert.equal(resolveBinaries().ffmpeg, pathBin, 'PATH 里的 ffmpeg 应排在 $DSH_HOME 默认之前')
+    assert.equal(resolveBinaries({}).ffprobe, pathProbe)
+
+    // ④ PATH 里什么都没有时，才轮到 $DSH_HOME 推导出来的默认位置
+    process.env.PATH = ''
     if (fs.existsSync(DEFAULT_BINARIES.ffmpeg)) {
-      assert.equal(resolveBinaries().ffmpeg, DEFAULT_BINARIES.ffmpeg) // ③ $DSH_HOME 默认
+      assert.equal(resolveBinaries().ffmpeg, DEFAULT_BINARIES.ffmpeg)
     }
   } finally {
+    process.env.PATH = keepPath
     for (const [k, v] of Object.entries(keepEnv)) {
       if (v === undefined) delete process.env[k]
       else process.env[k] = v
